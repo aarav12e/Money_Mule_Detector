@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #050a0e;
+  --bg-secondary: #0a1628;
+  --bg-card: #0d1f35;
+  --accent-green: #00ff88;
+  --accent-red: #ff3355;
+  --accent-orange: #ff8c00;
+  --accent-blue: #00d4ff;
+  --text-primary: #e2f0ff;
+  --text-muted: #5a7a99;
+  --border: #1a3354;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root { position: relative; z-index: 1; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #2a4a6a; }
+
+/* Glass card */
+.glass-card {
+  background: rgba(13, 31, 53, 0.8);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+}
+
+/* Glow effects */
+.glow-green { box-shadow: 0 0 20px rgba(0,255,136,0.15); }
+.glow-red { box-shadow: 0 0 20px rgba(255,51,85,0.15); }
+.text-accent-green { color: var(--accent-green); }
+.text-accent-red { color: var(--accent-red); }
+.text-accent-blue { color: var(--accent-blue); }
+.text-accent-orange { color: var(--accent-orange); }
+.text-muted { color: var(--text-muted); }
+.border-dark { border-color: var(--border); }
+.bg-card { background: var(--bg-card); }
+.bg-secondary { background: var(--bg-secondary); }
+
+/* Pulse animation */
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-green { animation: pulse-green 2s infinite; }
+
+/* Scan line animation */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Risk badge */
+.risk-critical { background: rgba(255,51,85,0.15); color: #ff3355; border: 1px solid rgba(255,51,85,0.3); }
+.risk-high { background: rgba(255,140,0,0.15); color: #ff8c00; border: 1px solid rgba(255,140,0,0.3); }
+.risk-medium { background: rgba(255,200,0,0.15); color: #ffc800; border: 1px solid rgba(255,200,0,0.3); }
+.risk-low { background: rgba(0,255,136,0.15); color: #00ff88; border: 1px solid rgba(0,255,136,0.3); }
+
+/* Cytoscape container */
+#cy {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+/* Input styles */
+.input-dark {
+  background: rgba(10, 22, 40, 0.8);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  transition: border-color 0.2s;
+  width: 100%;
+  outline: none;
+}
+.input-dark:focus {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 2px rgba(0,255,136,0.1);
+}
+
+/* Button styles */
+.btn-primary {
+  background: var(--accent-green);
+  color: #050a0e;
+  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary:hover { background: #00cc6e; transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-danger {
+  background: rgba(255,51,85,0.15);
+  color: #ff3355;
+  border: 1px solid rgba(255,51,85,0.3);
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.btn-danger:hover { background: rgba(255,51,85,0.25); }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.btn-ghost:hover { color: var(--text-primary); border-color: #2a4a6a; }
