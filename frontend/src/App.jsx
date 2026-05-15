@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { useThemeContext } from './context/ThemeContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -27,20 +28,22 @@ function PublicRoute({ children }) {
 }
 
 export default function App() {
+  const { currentTheme } = useThemeContext();
+
   return (
     <AuthProvider>
       <Toaster
         position="top-right"
         toastOptions={{
           style: {
-            background: '#0d1f35',
-            color: '#e2f0ff',
-            border: '1px solid #1a3354',
-            fontFamily: 'Space Grotesk, sans-serif',
+            background: currentTheme.palette.background.paper,
+            color: currentTheme.palette.text.primary,
+            border: `1px solid ${currentTheme.palette.divider}`,
+            fontFamily: currentTheme.typography.fontFamily,
             fontSize: '13px',
           },
-          success: { iconTheme: { primary: '#00ff88', secondary: '#050a0e' } },
-          error: { iconTheme: { primary: '#ff3355', secondary: '#050a0e' } },
+          success: { iconTheme: { primary: currentTheme.palette.success.main, secondary: currentTheme.palette.background.default } },
+          error: { iconTheme: { primary: currentTheme.palette.error.main, secondary: currentTheme.palette.background.default } },
         }}
       />
       <Routes>

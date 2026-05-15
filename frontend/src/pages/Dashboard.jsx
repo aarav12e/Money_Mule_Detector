@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
 import { Shield, AlertTriangle, Activity, Upload, ArrowRight, Clock } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, format } from 'date-fns'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { useThemeContext } from '../context/ThemeContext'
 
 function StatCard({ icon: Icon, label, value, color, sub }) {
   return (
@@ -29,6 +31,7 @@ function getRiskClass(score) {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const { currentTheme } = useThemeContext()
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -42,6 +45,13 @@ export default function Dashboard() {
   const totalRings = history.reduce((a, h) => a + (h.summary?.fraud_rings_detected || 0), 0)
   const totalSuspicious = history.reduce((a, h) => a + (h.summary?.suspicious_accounts_flagged || 0), 0)
   const totalTxns = history.reduce((a, h) => a + (h.csv_row_count || 0), 0)
+
+  // Format data for chart (reverse to show chronological order left-to-right)
+  const chartData = [...history].reverse().slice(-10).map(h => ({
+    name: format(new Date(h.uploaded_at), 'MMM dd'),
+    Rings: h.summary?.fraud_rings_detected || 0,
+    Suspicious: h.summary?.suspicious_accounts_flagged || 0
+  }));
 
   return (
     <div className="p-8">
@@ -77,6 +87,28 @@ export default function Dashboard() {
           Upload CSV <ArrowRight size={14} />
         </Link>
       </div>
+
+      {/* Analytics Chart */}
+      {!loading && history.length > 0 && (
+        <div className="glass-card p-6 mb-8">
+          <h2 className="font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Recent Detection Trends</h2>
+          <div style={{ width: '100%', height: 300 }}>
+            <ResponsiveContainer>
+              <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <XAxis dataKey="name" stroke={currentTheme.palette.text.secondary} fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke={currentTheme.palette.text.secondary} fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: currentTheme.palette.background.paper, borderColor: currentTheme.palette.divider, borderRadius: '8px', color: currentTheme.palette.text.primary }}
+                  itemStyle={{ color: currentTheme.palette.text.primary, fontSize: '12px' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
+                <Bar dataKey="Suspicious" fill={currentTheme.palette.warning.main} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Rings" fill={currentTheme.palette.error.main} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Recent analyses */}
       <div>

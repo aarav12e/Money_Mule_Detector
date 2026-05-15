@@ -1,10 +1,25 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { LayoutDashboard, Search, History, LogOut, Shield, Activity } from 'lucide-react'
+import { useThemeContext } from '../context/ThemeContext'
+import { LayoutDashboard, Search, History, LogOut, Shield, Palette } from 'lucide-react'
+import { Box, Typography, IconButton, Menu, MenuItem } from '@mui/material'
+import { useState } from 'react'
 
 export default function Layout() {
   const { user, logout } = useAuth()
+  const { currentTheme, toggleTheme, themeName } = useThemeContext()
   const navigate = useNavigate()
+  
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+
+  const handleThemeChange = (name) => {
+    toggleTheme(name);
+    handleClose();
+  }
 
   const handleLogout = () => {
     logout()
@@ -18,75 +33,90 @@ export default function Layout() {
   ]
 
   return (
-    <div className="flex min-h-screen" style={{ background: 'var(--bg-primary)' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default', color: 'text.primary' }}>
       {/* Sidebar */}
-      <aside className="w-64 flex flex-col" style={{ background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)' }}>
+      <Box sx={{ width: 256, display: 'flex', flexDirection: 'column', bgcolor: 'background.paper', borderRight: 1, borderColor: 'divider' }}>
         {/* Logo */}
-        <div className="p-6 flex items-center gap-3" style={{ borderBottom: '1px solid var(--border)' }}>
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,255,136,0.1)', border: '1px solid rgba(0,255,136,0.3)' }}>
-            <Shield size={18} style={{ color: 'var(--accent-green)' }} />
-          </div>
-          <div>
-            <div className="font-bold text-sm" style={{ color: 'var(--text-primary)', fontFamily: 'JetBrains Mono' }}>FinForge</div>
-            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Fraud Detection</div>
-          </div>
-        </div>
+        <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+          <Box sx={{ width: 36, height: 36, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${currentTheme.palette.primary.main}15`, border: 1, borderColor: `${currentTheme.palette.primary.main}40` }}>
+            <Shield size={18} color={currentTheme.palette.primary.main} />
+          </Box>
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>FinForge</Typography>
+            <Typography variant="caption" color="text.secondary">Fraud Detection</Typography>
+          </Box>
+        </Box>
 
         {/* Status indicator */}
-        <div className="mx-4 mt-4 px-3 py-2 rounded-lg flex items-center gap-2" style={{ background: 'rgba(0,255,136,0.05)', border: '1px solid rgba(0,255,136,0.15)' }}>
-          <div className="w-2 h-2 rounded-full pulse-green" style={{ background: 'var(--accent-green)' }} />
-          <span className="text-xs font-mono" style={{ color: 'var(--accent-green)' }}>SYSTEM ONLINE</span>
-        </div>
+        <Box sx={{ mx: 2, mt: 2, px: 1.5, py: 1, borderRadius: 2, display: 'flex', alignItems: 'center', gap: 1, bgcolor: `${currentTheme.palette.success.main}10`, border: 1, borderColor: `${currentTheme.palette.success.main}25` }}>
+          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main', animation: 'pulse 2s infinite' }} />
+          <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'success.main', fontWeight: 'bold' }}>SYSTEM ONLINE</Typography>
+        </Box>
 
         {/* Nav */}
-        <nav className="flex-1 p-4 flex flex-col gap-1 mt-2">
+        <Box component="nav" sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {navItems.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                  isActive
-                    ? 'text-accent-green'
-                    : 'text-muted hover:text-white'
-                }`
-              }
-              style={({ isActive }) => isActive ? {
-                background: 'rgba(0,255,136,0.08)',
-                border: '1px solid rgba(0,255,136,0.2)',
-                color: 'var(--accent-green)',
-              } : {
-                color: 'var(--text-muted)',
-              }}
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 500,
+                textDecoration: 'none',
+                transition: 'all 0.2s',
+                backgroundColor: isActive ? `${currentTheme.palette.primary.main}15` : 'transparent',
+                border: isActive ? `1px solid ${currentTheme.palette.primary.main}30` : '1px solid transparent',
+                color: isActive ? currentTheme.palette.primary.main : currentTheme.palette.text.secondary,
+              })}
             >
-              <Icon size={16} />
+              <Icon size={18} />
               {label}
             </NavLink>
           ))}
-        </nav>
+        </Box>
 
-        {/* User info */}
-        <div className="p-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'rgba(0,212,255,0.15)', color: 'var(--accent-blue)', border: '1px solid rgba(0,212,255,0.3)' }}>
+        {/* Theme Switcher & User info */}
+        <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="caption" color="text.secondary">Theme</Typography>
+            <IconButton size="small" onClick={handleClick} sx={{ color: 'text.secondary' }}>
+              <Palette size={16} />
+            </IconButton>
+            <Menu anchorEl={anchorEl} open={open} onClose={handleClose}>
+              <MenuItem selected={themeName === 'darkCyber'} onClick={() => handleThemeChange('darkCyber')}>Dark Cyber</MenuItem>
+              <MenuItem selected={themeName === 'lightCorporate'} onClick={() => handleThemeChange('lightCorporate')}>Light Corporate</MenuItem>
+              <MenuItem selected={themeName === 'midnightViolet'} onClick={() => handleThemeChange('midnightViolet')}>Midnight Violet</MenuItem>
+            </Menu>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 'bold', bgcolor: `${currentTheme.palette.secondary.main}25`, color: 'secondary.main', border: 1, borderColor: `${currentTheme.palette.secondary.main}50` }}>
               {user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{user?.name || 'Analyst'}</div>
-              <div className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>{user?.email}</div>
-            </div>
-          </div>
-          <button onClick={handleLogout} className="btn-ghost w-full flex items-center justify-center gap-2 text-xs">
-            <LogOut size={13} />
-            Sign Out
-          </button>
-        </div>
-      </aside>
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="caption" sx={{ display: 'block', fontWeight: 'bold', noWrap: true }}>{user?.name || 'Analyst'}</Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', noWrap: true }}>{user?.email}</Typography>
+            </Box>
+          </Box>
+          <Box
+            component="button"
+            onClick={handleLogout}
+            sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, p: 1, borderRadius: 1, bgcolor: 'transparent', border: 'none', color: 'text.secondary', cursor: 'pointer', '&:hover': { bgcolor: 'action.hover', color: 'text.primary' } }}
+          >
+            <LogOut size={14} />
+            <Typography variant="caption" fontWeight="bold">Sign Out</Typography>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <Box component="main" sx={{ flex: 1, overflow: 'auto' }}>
         <Outlet />
-      </main>
-    </div>
+      </Box>
+    </Box>
   )
 }

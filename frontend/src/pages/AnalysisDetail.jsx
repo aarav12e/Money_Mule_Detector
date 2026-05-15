@@ -39,6 +39,29 @@ export default function AnalysisDetail() {
     URL.revokeObjectURL(url)
   }
 
+  const downloadCSV = () => {
+    if (!data || !data.suspicious_accounts) return;
+    const headers = ['Account ID', 'Suspicion Score', 'Ring ID', 'Detected Patterns'];
+    const rows = data.suspicious_accounts.map(acc => [
+      acc.account_id,
+      acc.suspicion_score,
+      acc.ring_id || 'None',
+      `"${acc.detected_patterns.join(', ')}"`
+    ]);
+    const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `suspicious_accounts_${data.filename}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const printReport = () => {
+    window.print();
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center h-full py-24">
       <Loader size={24} className="animate-spin" style={{ color: 'var(--accent-green)' }} />
@@ -71,9 +94,17 @@ export default function AnalysisDetail() {
             <span>{data.summary?.processing_time_seconds}s processing</span>
           </div>
         </div>
-        <button onClick={downloadJSON} className="btn-primary flex items-center gap-2">
-          <Download size={14} /> Download JSON
-        </button>
+        <div className="flex gap-2">
+          <button onClick={printReport} className="btn-ghost flex items-center gap-2">
+            <FileText size={14} /> Print PDF
+          </button>
+          <button onClick={downloadCSV} className="btn-ghost flex items-center gap-2">
+            <Download size={14} /> Export CSV
+          </button>
+          <button onClick={downloadJSON} className="btn-primary flex items-center gap-2">
+            <Download size={14} /> JSON
+          </button>
+        </div>
       </div>
 
       {/* Summary */}
