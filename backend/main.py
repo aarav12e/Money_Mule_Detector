@@ -115,9 +115,12 @@ async def analyze(file: UploadFile = File(...), current_user=Depends(get_current
     start = time.time()
     content = await file.read()
     try:
-        df = pd.read_csv(io.BytesIO(content))
+        if file.filename.endswith((".xlsx", ".xls")):
+            df = pd.read_excel(io.BytesIO(content))
+        else:
+            df = pd.read_csv(io.BytesIO(content))
     except Exception as e:
-        raise HTTPException(400, f"CSV parse error: {e}")
+        raise HTTPException(400, f"File parse error: {e}")
 
     required = {"transaction_id", "sender_id", "receiver_id", "amount", "timestamp"}
     if not required.issubset(df.columns):

@@ -5,16 +5,33 @@ from datetime import timedelta
 
 # ─── CYCLE DETECTION (Circular Fund Routing) ────────────────────────────────
 
-def find_cycles(G):
-    """Detect all cycles of length 3–5 using DFS."""
+import time
+
+def find_cycles(G, max_time_seconds=10):
+    """Detect all cycles of length 3–5 using bounded DFS with a timeout."""
     cycles_found = []
+    start_time = time.time()
     try:
-        all_cycles = list(nx.simple_cycles(G))
-        for cycle in all_cycles:
+        # length_bound limits the search depth (drastically faster)
+        try:
+            cycle_gen = nx.simple_cycles(G, length_bound=5)
+        except TypeError:
+            # Fallback for older networkx versions without length_bound
+            cycle_gen = nx.simple_cycles(G)
+            
+        for cycle in cycle_gen:
+            # Prevent infinite hanging on dense subgraphs
+            if time.time() - start_time > max_time_seconds:
+                print("Cycle detection timed out.")
+                break
+            if len(cycles_found) >= 1000:
+                print("Cycle detection reached max limit (1000).")
+                break
             if 3 <= len(cycle) <= 5:
                 cycles_found.append(cycle)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error in find_cycles: {e}")
+        
     return cycles_found
 
 
@@ -26,17 +43,20 @@ def find_smurfing(G, df, threshold=10, time_window_hours=72):
     df_copy = df.copy()
     df_copy["timestamp"] = pd.to_datetime(df_copy["timestamp"])
 
+    # Pre-group timestamps for O(1) lookups instead of O(N) filtering per node
+    receiver_timestamps = df_copy.groupby(df_copy["receiver_id"].astype(str))["timestamp"].apply(list).to_dict()
+    sender_timestamps = df_copy.groupby(df_copy["sender_id"].astype(str))["timestamp"].apply(list).to_dict()
+
     for node in G.nodes():
+        node_str = str(node)
         in_degree = G.in_degree(node)
         out_degree = G.out_degree(node)
 
         # Fan-in: 10+ senders → 1 receiver
         if in_degree >= threshold:
-            senders = list(G.predecessors(node))
-            # Check temporal clustering
-            node_txns = df_copy[df_copy["receiver_id"].astype(str) == str(node)]["timestamp"]
+            node_txns = receiver_timestamps.get(node_str, [])
             if len(node_txns) >= threshold:
-                time_range = node_txns.max() - node_txns.min()
+                time_range = max(node_txns) - min(node_txns)
                 if time_range <= timedelta(hours=time_window_hours):
                     smurfing_nodes[node].append("fan_in_temporal")
                 else:
@@ -44,10 +64,9 @@ def find_smurfing(G, df, threshold=10, time_window_hours=72):
 
         # Fan-out: 1 sender → 10+ receivers
         if out_degree >= threshold:
-            receivers = list(G.successors(node))
-            node_txns = df_copy[df_copy["sender_id"].astype(str) == str(node)]["timestamp"]
+            node_txns = sender_timestamps.get(node_str, [])
             if len(node_txns) >= threshold:
-                time_range = node_txns.max() - node_txns.min()
+                time_range = max(node_txns) - min(node_txns)
                 if time_range <= timedelta(hours=time_window_hours):
                     smurfing_nodes[node].append("fan_out_temporal")
                 else:
@@ -58,8 +77,11 @@ def find_smurfing(G, df, threshold=10, time_window_hours=72):
 
 # ─── SHELL CHAIN DETECTION ────────────────────────────────────────────────────
 
-def find_shell_chains(G, df, min_chain_length=3, max_txn_count=3):
+def find_shell_chains(G, df, min_chain_length=3, max_txn_count=3, max_time_seconds=5):
     """Detect layered shell networks: chains of low-activity intermediate accounts."""
+    import time
+    start_time = time.time()
+    
     # Count total transactions per account
     txn_counts = defaultdict(int)
     for _, row in df.iterrows():
@@ -71,11 +93,20 @@ def find_shell_chains(G, df, min_chain_length=3, max_txn_count=3):
 
     visited_chains = set()
     for node in G.nodes():
+        if time.time() - start_time > max_time_seconds:
+            print("Shell chain detection timed out.")
+            break
+            
         if node in shell_accounts:
             continue  # Start from non-shell nodes
+            
         # DFS forward through shell intermediaries
         def dfs_shell(current, chain, depth):
-            if depth > 6:
+            if time.time() - start_time > max_time_seconds:
+                return
+            if len(shell_chains) >= 1000:
+                return
+            if depth > 4: # Reduced from 6 to 4 to prevent exponential explosion
                 return
             for succ in G.successors(current):
                 if succ in shell_accounts and succ not in chain:
@@ -99,7 +130,9 @@ def detect_fraud_rings(G, df):
     seen_members = set()
 
     # 1. Cycle-based rings
+    print(f"Starting cycle detection on {G.number_of_nodes()} nodes, {G.number_of_edges()} edges...")
     cycles = find_cycles(G)
+    print(f"Finished cycle detection. Processing {len(cycles)} cycles...")
     for cycle in cycles:
         members = [str(a) for a in cycle]
         key = frozenset(members)
@@ -116,7 +149,9 @@ def detect_fraud_rings(G, df):
         })
 
     # 2. Smurfing rings
+    print("Starting smurfing detection...")
     smurfing = find_smurfing(G, df)
+    print(f"Finished smurfing detection. Found {len(smurfing)} smurfing nodes.")
     for node, patterns in smurfing.items():
         ring_id = f"RING_{ring_counter:03d}"
         ring_counter += 1
@@ -137,7 +172,9 @@ def detect_fraud_rings(G, df):
         })
 
     # 3. Shell chain rings
+    print("Starting shell chain detection...")
     shell_chains = find_shell_chains(G, df)
+    print(f"Finished shell chain detection. Found {len(shell_chains)} shell chains.")
     for chain in shell_chains:
         members = [str(a) for a in chain]
         key = frozenset(members)
@@ -159,6 +196,7 @@ def detect_fraud_rings(G, df):
 # ─── SUSPICION SCORE COMPUTATION ─────────────────────────────────────────────
 
 def compute_suspicion_scores(G, df, fraud_rings):
+    print(f"Starting suspicion scores computation for {G.number_of_nodes()} accounts...")
     account_to_rings = defaultdict(list)
     for ring in fraud_rings:
         for acc in ring["member_accounts"]:

@@ -19,13 +19,26 @@ export default function Analyze() {
   const [results, setResults] = useState(null)
   const [activeTab, setActiveTab] = useState('graph')
 
-  const onDrop = useCallback((accepted) => {
-    if (accepted.length) setFile(accepted[0])
+  const onDrop = useCallback((accepted, rejected) => {
+    if (accepted.length) {
+      setFile(accepted[0])
+    } else if (rejected.length) {
+      toast.error('Invalid file type or format. Please upload a CSV or Excel file.')
+    }
   }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'text/csv': ['.csv'] },
+    accept: {
+      'text/csv': ['.csv'],
+      'application/vnd.ms-excel': ['.csv', '.xls'],
+      'application/csv': ['.csv'],
+      'text/x-csv': ['.csv'],
+      'application/x-csv': ['.csv'],
+      'text/comma-separated-values': ['.csv'],
+      'text/x-comma-separated-values': ['.csv'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx']
+    },
     maxFiles: 1,
   })
 
@@ -67,7 +80,7 @@ export default function Analyze() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--text-primary)' }}>New Analysis</h1>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Upload a transaction CSV to detect money muling networks</p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Upload a transaction CSV or Excel file to detect money muling networks</p>
       </div>
 
       {/* Upload */}
@@ -92,7 +105,7 @@ export default function Analyze() {
           ) : (
             <div>
               <div className="text-sm font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
-                {isDragActive ? 'Drop the CSV here' : 'Drag & drop CSV or click to browse'}
+                {isDragActive ? 'Drop the file here' : 'Drag & drop CSV/Excel or click to browse'}
               </div>
               <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                 Required columns: transaction_id, sender_id, receiver_id, amount, timestamp
